@@ -15,7 +15,6 @@ x1_mean = x1.mean()
 x2_mean = x2.mean()
 y_mean = y.mean()
 
-# beta0 = z_mean - beta1 * x_mean - beta2 * y_mean
 df = pd.DataFrame({'x1': x1, 'x2': x2, 'y':y})
 X = df[['x1', 'x2']]
 Y = df.y
@@ -60,6 +59,7 @@ s_r1y, s_r2y = np.dot(s_r1, s_y), np.dot(s_r2, s_y)
 s_r1r1, s_r2r2 = np.dot(s_r1, s_r1), np.dot(s_r2, s_r2)
 
 beta1, beta2 = s_r1y / s_r1r1, s_r2y / s_r2r2
+# beta0 = y_mean - beta1 * x1_mean - beta2 * x2_mean
 beta0 = y_mean - beta1 * x1_mean - beta2 * x2_mean
 y_hat = beta0 + beta1 * x1 + beta2 * x2
 print(f"y_mean: {y_mean}, y_hat.mean: {y_hat.mean()}.\n\
