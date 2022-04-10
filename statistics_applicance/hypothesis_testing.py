@@ -79,9 +79,3 @@ f = fitted.fvalue
 print(f)
 
 '''Standartization'''
-print(temp.head())
-temp['r_norm'] = (r - r.mean()) / np.std(r)
-temp['p_norm'] = (p - p.mean()) / np.std(p)
-y_norm = temp['y_norm'] = (y - y.mean()) / np.std(y)
-
-norm_model = sm.OLS(y_norm, temp[['r_norm', 'p_norm']])
