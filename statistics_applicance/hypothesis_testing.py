@@ -46,7 +46,7 @@ model = sm.OLS(y, X)
 fitted = model.fit()
 # print(fitted.summary())
 
-'''I'll start with t-statistics for 2 control variables: random and prepar'''
+'''I'll start with t and f-statistics for 2 control variables: random and prepar'''
 random_coef, prepar_coef = fitted.params[1], fitted.params[-1]
 t_random, t_prepar = fitted.tvalues[1], fitted.tvalues[-1]
 
@@ -75,6 +75,13 @@ t_value_p = prepar_coef / se_p
 # print(fitted.summary())
 # print(t_value_p)
 
-'''Now f-statistics'''
 f = fitted.fvalue
 print(f)
+
+'''Standartization'''
+print(temp.head())
+temp['r_norm'] = (r - r.mean()) / np.std(r)
+temp['p_norm'] = (p - p.mean()) / np.std(p)
+y_norm = temp['y_norm'] = (y - y.mean()) / np.std(y)
+
+norm_model = sm.OLS(y_norm, temp[['r_norm', 'p_norm']])
