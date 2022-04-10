@@ -1,42 +1,80 @@
 import pandas as pd
 import numpy as np
+from random import randint, seed
+from math import sqrt
 
-data = pd.read_csv('data/student_performance.csv')
-rename = {'race/ethnicity' : 'race',
-                            'parental level of education': 'pareduc',
-                            'test preparation course' : 'prepar',
-                            'math score' : 'math',
-                            'reading score' : 'reading',
-                            'writing score' : 'writing'}
-data = data.rename(columns=rename)
-data = data.dropna()
-data['gender'] = data['gender'].apply(lambda gender: 1 if gender == 'male' else 0)
+from sklearn.linear_model import LinearRegression
+import statsmodels.api as sm
 
-tests = ['math', 'reading', 'writing']
-# print(data.groupby(['race'])[tests].mean())
-# I noticed that avg test score in all three tests (math, reading, writing)
-# is increasing with race decreasing, i.e. group A has poorest results,
-# and group E - highest.
-race_options = sorted(data['race'].unique())
-races = dict(zip(
-    race_options,
-    range(5, 0, -1)
-))
-# print(races)
-data['race'] = data['race'].apply(lambda x: races[x])
+from prepare_data import prepare_data
 
-# print(print(data.groupby(['pareduc'])[tests].mean()))
-pareduc_options = data.groupby(['pareduc'])['math'].mean().sort_values().index
-pareducs = dict(zip(
-    pareduc_options,
-    range(1, len(pareduc_options) + 1)
-))
-data['pareduc'] = data['pareduc'].apply(lambda x: pareducs[x])
 
-# print(print(data.groupby(['lunch'])[tests].mean()))
-data['lunch'] = data['lunch'].apply(lambda x: 1 if x == 'standard' else 0)
+data = prepare_data()
+# print(data.head())
+data = sm.add_constant(data)
+seed(1)
+data['random'] = [randint(0, 100) for _ in range(data.shape[0])]
 
-# print(data.groupby(['prepar'])[tests].mean())
-data['prepar'] = data['prepar'].apply(lambda x: 1 if x == 'completed' else 0)
+features = ['random', 'gender', 'race', 'pareduc', 'lunch', 'prepar']
+X = data[features]
+y, reading, writing = data['math'], data['reading'], data['writing']
 
-print(data.head())
+# sklearn model
+sk_model = LinearRegression(fit_intercept=True).fit(X=X, y=y)
+sk_R2 = sk_model.score(X, y)
+sk_coeffs = [sk_model.intercept_] + list(sk_model.coef_)
+
+# statsmodels model
+X = data[['const'] + features]
+sm_model = sm.OLS(y, X)
+fitted = sm_model.fit()
+# print(fitted.summary())
+
+''' Now let's test some hypothesis '''
+
+n, temp = data.shape[0], data.copy()
+temp = temp[['const', 'random', 'prepar', 'math']]
+
+c = temp['const']
+r = temp['random']
+p = temp['prepar']
+
+y = temp['math']
+test = ['const', 'random', 'prepar']
+X = temp[test]
+model = sm.OLS(y, X)
+fitted = model.fit()
+# print(fitted.summary())
+
+'''I'll start with t-statistics for 2 control variables: random and prepar'''
+random_coef, prepar_coef = fitted.params[1], fitted.params[-1]
+t_random, t_prepar = fitted.tvalues[1], fitted.tvalues[-1]
+
+# Manually
+y_pred = fitted.predict(X)
+temp['y_pred'] = y_pred
+temp['residuals'] = y_pred - y
+
+s_uu = sum(temp['residuals'] ** 2)
+var_u = s_uu / n
+sd_u = sqrt(var_u)
+
+s_pp = sum((p - p.mean()) ** 2)
+var_p = s_pp / n
+sd_p = sqrt(var_p)
+
+s_rr = sum((r - r.mean()) ** 2)
+var_r = s_rr / n
+sd_r = sqrt(var_r)
+
+helper_pr = sm.OLS(p, r)
+fitted_pr = helper_pr.fit()
+R2_pr = fitted_pr.rsquared
+se_p = sd_u / sqrt(s_pp * (1 - R2_pr))
+t_value_p = prepar_coef / se_p
+# print(fitted.summary())
+# print(t_value_p)
+
+'''Now f-statistics'''
+f = fitted.fvalue
+print(f)
