@@ -1,2 +1,2 @@
 # I-adore-Wooldridge
-Here I'll post how I write manual regression models
+This repo was done to play with statistics, linear algebra and econometrics in Python. I solved some of computer exercices from the "Econometrics" book, Jeffrey Wooldridge.
